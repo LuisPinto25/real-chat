@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import { CheckCheck } from 'lucide-react';
 import { Message } from '@/types';
 import { formatMessageTime } from '@/lib/formatters';

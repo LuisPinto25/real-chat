@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import { Users } from 'lucide-react';
 import { Chat } from '@/types';
 import { useAuth } from '@/contexts/auth-context';

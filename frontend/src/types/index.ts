@@ -6,6 +6,11 @@ export interface User {
   createdAt?: string;
 }
 
+export interface AuthResponse {
+  user: User;
+  token: string;
+}
+
 export interface ChatParticipant {
   id: string;
   chatId: string;

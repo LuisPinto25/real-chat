@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { LogOut, MessageSquarePlus, Users } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { useSocket } from '@/contexts/socket-context';
@@ -82,7 +82,7 @@ export function UserProfileHeader() {
             onClick={logout}
             title="Cerrar sesión"
             aria-label="Cerrar sesión"
-            className="h-9 w-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            className="h-9 w-9 text-muted-foreground hover:text-red-600 dark:hover:text-red-400 hover:bg-red-500/10"
           >
             <LogOut className="h-5 w-5" />
           </Button>

@@ -1,11 +1,10 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState } from 'react';
 import { Search, UserPlus, Users } from 'lucide-react';
-import { User } from '@/types';
-import { apiRequest } from '@/lib/api';
 import { useSocket } from '@/contexts/socket-context';
 import { useChat } from '@/contexts/chat-context';
+import { useUsers } from '@/hooks/use-users';
 import {
   Dialog,
   DialogContent,
@@ -14,6 +13,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { ErrorAlert } from '@/components/ui/error-alert';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -27,38 +27,23 @@ interface NewChatDialogProps {
 export function NewChatDialog({ open, onOpenChange }: NewChatDialogProps) {
   const { onlineUsers } = useSocket();
   const { createDirectChat } = useChat();
+  const { filteredUsers, isLoading, search, setSearch } = useUsers(open);
 
-  const [users, setUsers] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [search, setSearch] = useState('');
   const [isStartingChat, setIsStartingChat] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!open) return;
-
-    setIsLoading(true);
-    apiRequest<User[]>('/users')
-      .then((data) => setUsers(data))
-      .catch((err) => console.error('Error fetching users:', err))
-      .finally(() => setIsLoading(false));
-  }, [open]);
-
-  const filteredUsers = useMemo(() => {
-    if (!search.trim()) return users;
-    const q = search.toLowerCase().trim();
-    return users.filter(
-      (u) =>
-        u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q),
-    );
-  }, [users, search]);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleSelectUser = async (targetUserId: string) => {
     try {
+      setErrorMessage(null);
       setIsStartingChat(targetUserId);
       await createDirectChat(targetUserId);
       onOpenChange(false);
-    } catch (err) {
-      console.error('Error creating direct chat:', err);
+    } catch (err: unknown) {
+      setErrorMessage(
+        err instanceof Error
+          ? err.message
+          : 'No se pudo iniciar la conversación.',
+      );
     } finally {
       setIsStartingChat(null);
     }
@@ -78,7 +63,8 @@ export function NewChatDialog({ open, onOpenChange }: NewChatDialogProps) {
           </DialogDescription>
         </DialogHeader>
 
-        {/* Search Input */}
+        <ErrorAlert message={errorMessage} className="my-1" />
+
         <div className="relative my-2">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -89,7 +75,6 @@ export function NewChatDialog({ open, onOpenChange }: NewChatDialogProps) {
           />
         </div>
 
-        {/* Users list */}
         <ScrollArea className="h-72 border rounded-md p-1">
           {isLoading ? (
             <div className="space-y-3 p-3">
