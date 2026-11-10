@@ -1,4 +1,5 @@
 # RealChat - Plataforma de Chat en Tiempo Real 🚀
+
 ### Prueba Técnica ACEMA Ingeniería / Solux Operaciones
 
 Aplicación web de mensajería instantánea inspirada en **WhatsApp**, desarrollada con arquitectura limpia (**Clean Architecture**), patrón **CQRS** organizativo, comunicación bidireccional mediante **WebSockets**, entorno de ejecución **Bun**, framework **NestJS** en el backend, base de datos relacional **PostgreSQL**, y frontend reactivo con **Next.js 15**, **Tailwind CSS** y componentes **shadcn/ui**.
@@ -37,6 +38,7 @@ Aplicación web de mensajería instantánea inspirada en **WhatsApp**, desarroll
 ## 🏛 Arquitectura y Decisiones Tecnológicas
 
 ### Backend
+
 - **Entorno de Ejecución**: **Bun** (v1.3+). Proporciona un arranque ultra rápido (~50ms), rendimiento I/O superior y compatibilidad nativa con TypeScript.
 - **Framework**: **NestJS**. Proporciona modularidad empresarial, inyección de dependencias robusta y soporte oficial para WebSockets y CQRS.
 - **Clean Architecture**:
@@ -50,10 +52,12 @@ Aplicación web de mensajería instantánea inspirada en **WhatsApp**, desarroll
   - **`presentation`**: Controladores HTTP REST (`AuthController`, `UsersController`, `ChatsController`, `MessagesController`) y el Gateway de WebSockets (`ChatGateway`).
 
 ### Base de Datos
+
 - **PostgreSQL 16**: Motor relacional con integridad referencial, índices únicos y relaciones en cascada.
 - **Prisma ORM**: Tipado seguro de extremo a extremo, migraciones y esquemas declarativos.
 
 ### Frontend
+
 - **Framework**: **Next.js 15** con App Router y arquitectura modular orientada a streaming (`src/app/`, `src/components/`, `src/contexts/`, `src/lib/`).
 - **Librería de Componentes**: **shadcn/ui** construida sobre Radix UI y Tailwind CSS.
 - **Manejo de Estado Global**: Implementado limpiamente mediante **React Context API** con separación de responsabilidades:
@@ -66,7 +70,7 @@ Aplicación web de mensajería instantánea inspirada en **WhatsApp**, desarroll
 ## 📦 Requisitos Previos
 
 - **Docker** y **Docker Compose** (versión 20+ / Docker Compose v2+).
-- *Opcional (solo si ejecutas localmente sin Docker)*:
+- _Opcional (solo si ejecutas localmente sin Docker)_:
   - [Bun](https://bun.sh/) (v1.1 o superior).
   - [Node.js](https://nodejs.org/) (v20 o superior).
   - Instancia local de PostgreSQL corriendo en el puerto 5432.
@@ -78,41 +82,51 @@ Aplicación web de mensajería instantánea inspirada en **WhatsApp**, desarroll
 Con un solo comando se levanta toda la infraestructura (Base de datos PostgreSQL, Backend NestJS en Bun y Frontend Next.js).
 
 ### 1. Clonar el repositorio y navegar a la raíz
+
 ```bash
 git clone <URL_DEL_REPOSITORIO>
 cd real-chat
 ```
 
 ### 2. Configurar variables de entorno
+
 El repositorio incluye archivos `.env` y `.env.template` preconfigurados para Docker. Si deseas crear uno nuevo:
+
 ```bash
 cp .env.template .env
 ```
 
 ### 3. Levantar la aplicación con Docker Compose
+
 ```bash
 docker compose up --build -d
 ```
 
 ### 4. Verificar que los contenedores estén activos
+
 ```bash
 docker compose ps
 ```
+
 Deberías ver los 3 servicios corriendo:
+
 - `realchat-postgres`: Puerto `5432` (con healthcheck activo).
 - `realchat-backend`: Puerto `3001` (NestJS corriendo bajo Bun).
 - `realchat-frontend`: Puerto `3000` (Next.js en producción).
 
 ### 5. Acceder a la Aplicación
+
 - 🌐 **Frontend (Web App)**: [http://localhost:3000](http://localhost:3000)
 - 🔌 **Backend (API REST)**: [http://localhost:3001/api](http://localhost:3001/api)
 - ⚡ **WebSockets**: `ws://localhost:3001`
 
 ### 6. Detener los contenedores
+
 ```bash
 docker compose down
 ```
-*(Si deseas eliminar también el volumen de la base de datos: `docker compose down -v`)*.
+
+_(Si deseas eliminar también el volumen de la base de datos: `docker compose down -v`)_.
 
 ---
 
@@ -121,12 +135,15 @@ docker compose down
 Si deseas ejecutar el proyecto localmente sin contenedores para backend y frontend:
 
 ### 1. Iniciar PostgreSQL
+
 Asegúrate de tener un contenedor o servicio de PostgreSQL activo en el puerto 5432:
+
 ```bash
 docker run -d --name local-postgres -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=realchat_db -p 5432:5432 postgres:16-alpine
 ```
 
 ### 2. Configurar y Levantar el Backend
+
 ```bash
 cd backend
 
@@ -142,10 +159,13 @@ bun run prisma:push
 # Iniciar servidor en modo desarrollo
 bun run start:dev
 ```
+
 El backend estará disponible en `http://localhost:3001/api`.
 
 ### 3. Configurar y Levantar el Frontend
+
 En una nueva pestaña de terminal:
+
 ```bash
 cd frontend
 
@@ -158,6 +178,7 @@ bun install
 # Iniciar en modo desarrollo
 bun run dev
 ```
+
 Abre tu navegador en [http://localhost:3000](http://localhost:3000).
 
 ---
@@ -200,18 +221,18 @@ if (error) {
 
 ### Rutas HTTP REST (`/api`)
 
-| Método | Endpoint | Descripción | Requiere Auth |
-| :--- | :--- | :--- | :--- |
-| **POST** | `/api/auth/register` | Registro de nuevo usuario (`name`, `email`, `password`) | No |
-| **POST** | `/api/auth/login` | Inicio de sesión con credenciales válidas | No |
-| **GET** | `/api/auth/me` | Obtiene el perfil del usuario autenticado | Sí (Bearer JWT) |
-| **GET** | `/api/users` | Lista todos los usuarios registrados excepto el actual | Sí (Bearer JWT) |
-| **GET** | `/api/users/:id` | Obtiene la información de un usuario específico | Sí (Bearer JWT) |
-| **POST** | `/api/chats` | Crea un chat directo o grupal (`participantIds`, `name`, `isGroup`) | Sí (Bearer JWT) |
-| **GET** | `/api/chats` | Lista los chats del usuario con último mensaje | Sí (Bearer JWT) |
-| **GET** | `/api/chats/:id` | Detalle del chat y participantes | Sí (Bearer JWT) |
-| **GET** | `/api/chats/:id/messages` | Historial de mensajes de una conversación | Sí (Bearer JWT) |
-| **POST** | `/api/chats/:id/messages` | Envío de mensaje vía REST (fallback a socket) | Sí (Bearer JWT) |
+| Método   | Endpoint                  | Descripción                                                         | Requiere Auth   |
+| :------- | :------------------------ | :------------------------------------------------------------------ | :-------------- |
+| **POST** | `/api/auth/register`      | Registro de nuevo usuario (`name`, `email`, `password`)             | No              |
+| **POST** | `/api/auth/login`         | Inicio de sesión con credenciales válidas                           | No              |
+| **GET**  | `/api/auth/me`            | Obtiene el perfil del usuario autenticado                           | Sí (Bearer JWT) |
+| **GET**  | `/api/users`              | Lista todos los usuarios registrados excepto el actual              | Sí (Bearer JWT) |
+| **GET**  | `/api/users/:id`          | Obtiene la información de un usuario específico                     | Sí (Bearer JWT) |
+| **POST** | `/api/chats`              | Crea un chat directo o grupal (`participantIds`, `name`, `isGroup`) | Sí (Bearer JWT) |
+| **GET**  | `/api/chats`              | Lista los chats del usuario con último mensaje                      | Sí (Bearer JWT) |
+| **GET**  | `/api/chats/:id`          | Detalle del chat y participantes                                    | Sí (Bearer JWT) |
+| **GET**  | `/api/chats/:id/messages` | Historial de mensajes de una conversación                           | Sí (Bearer JWT) |
+| **POST** | `/api/chats/:id/messages` | Envío de mensaje vía REST (fallback a socket)                       | Sí (Bearer JWT) |
 
 ### Eventos de WebSockets (Socket.io)
 
@@ -222,42 +243,3 @@ if (error) {
 - **`create_chat`**: Notificación en tiempo real a los participantes cuando se crea un nuevo chat directo o grupo.
 - **`typing_start` / `typing_stop`**: Indicador de escritura en vivo.
 - **`user_status` / `online_users`**: Notificación de usuarios que entran o salen de línea.
-
----
-
-## 🎨 Buenas Prácticas de UX y Heurísticas de Nielsen
-
-La interfaz de usuario fue diseñada siguiendo las 10 heurísticas de usabilidad de Jakob Nielsen:
-
-1. **Visibilidad del estado del sistema**:
-   - Badge en vivo con indicador de conexión ("En línea", "Conectando...", banner de advertencia si se pierde la conexión).
-   - Indicador de *"Escribiendo..."* en tiempo real cuando la otra persona redacta un mensaje.
-   - Skeletons animados y spinners mientras cargan los chats, mensajes o formularios.
-2. **Relación entre el sistema y el mundo real**:
-   - Burbujas de mensajes estilo WhatsApp (mensajes propios a la derecha en verde esmeralda con doble check, mensajes ajenos a la izquierda con nombre del remitente).
-   - Formato intuitivo de horas ("10:30 AM", "Ayer", fechas relativas).
-3. **Control y libertad del usuario**:
-   - Navegación responsive fluida en móviles con botón de retorno al listado de conversaciones.
-   - Modales accesibles con botón de cierre (Esc o botón 'X') y cancelación sin efecto secundario.
-4. **Consistencia y estándares**:
-   - Sistema de diseño unificado con tokens semánticos en `globals.css` para temas Claro y Oscuro.
-   - Iconografía coherente de `lucide-react`.
-5. **Prevención de errores**:
-   - Botón de envío deshabilitado cuando el mensaje está vacío o en proceso de envío para evitar duplicaciones.
-   - Formulario de creación de grupos valida nombre obligatorio y al menos 1 participante.
-6. **Reconocimiento antes que recuerdo**:
-   - Avatares con iniciales y paleta cromática identificable por usuario.
-   - Barra de búsqueda para filtrar rápidamente chats o usuarios sin tener que recordar correos exactos.
-7. **Flexibilidad y eficiencia de uso**:
-   - Envío de mensajes con la tecla `Enter` y salto de línea con `Shift + Enter`.
-   - Diálogos rápidos para iniciar chat 1 a 1 o grupo con un solo clic.
-8. **Diseño estético y minimalista**:
-   - Interfaz limpia construida con shadcn/ui, eliminando elementos visuales innecesarios y maximizando el área de lectura.
-9. **Ayuda a reconocer, diagnosticar y recuperarse de errores**:
-   - Mensajes de error amigables y específicos en español: *"Credenciales inválidas"*, *"El correo ya se encuentra registrado"*, banner con botón *"Reconectar"* ante caídas de red.
-10. **Ayuda y documentación**:
-    - Estados vacíos explicativos con llamadas a la acción (*"¡Aún no tienes chats! Haz clic para iniciar una conversación"*).
-
----
-
-Desarrollado para la **Prueba Técnica de ACEMA Ingeniería**.
