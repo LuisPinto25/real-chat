@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useForm } from 'react-hook-form';
 import {
   MessageSquare,
   Lock,
@@ -16,47 +17,46 @@ import { useAuth } from '@/contexts/auth-context';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { cn } from '@/lib/utils';
+
+interface RegisterFormValues {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
 
 export default function RegisterPage() {
-  const { register } = useAuth();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const { register: registerAuth } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<RegisterFormValues>({
+    defaultValues: {
+      name: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+    },
+    mode: 'onTouched',
+  });
+
+  const onSubmit = async (data: RegisterFormValues) => {
     setErrorMessage(null);
 
-    if (!name.trim() || !email.trim() || !password) {
-      setErrorMessage('Por favor, completa todos los campos.');
-      return;
-    }
-
-    if (password.length < 6) {
-      setErrorMessage('La contraseña debe tener al menos 6 caracteres.');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setErrorMessage('Las contraseñas no coinciden.');
-      return;
-    }
-
     try {
-      setIsLoading(true);
-      await register(name.trim(), email.trim(), password);
+      await registerAuth(data.name.trim(), data.email.trim(), data.password);
     } catch (err: unknown) {
       setErrorMessage(
         err instanceof Error
           ? err.message
           : 'Error al registrar la cuenta. Intenta de nuevo.',
       );
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -92,7 +92,11 @@ export default function RegisterPage() {
         )}
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          noValidate
+          className="space-y-4"
+        >
           <div className="space-y-1.5">
             <label
               className="text-xs font-semibold text-foreground"
@@ -106,17 +110,27 @@ export default function RegisterPage() {
                 id="name"
                 type="text"
                 placeholder="Juan Pérez"
-                value={name}
-                onChange={(e) => {
-                  setName(e.target.value);
-                  setErrorMessage(null);
-                }}
-                disabled={isLoading}
-                required
-                className="pl-9 h-10"
+                disabled={isSubmitting}
+                className={cn(
+                  'pl-9 h-10',
+                  errors.name &&
+                    'border-destructive focus-visible:ring-destructive',
+                )}
                 autoComplete="name"
+                {...register('name', {
+                  required: 'El nombre es obligatorio',
+                  minLength: {
+                    value: 2,
+                    message: 'El nombre debe tener al menos 2 caracteres',
+                  },
+                })}
               />
             </div>
+            {errors.name && (
+              <p className="text-[11px] text-destructive font-medium mt-1">
+                {errors.name.message}
+              </p>
+            )}
           </div>
 
           <div className="space-y-1.5">
@@ -132,17 +146,27 @@ export default function RegisterPage() {
                 id="email"
                 type="email"
                 placeholder="ejemplo@acema.com"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  setErrorMessage(null);
-                }}
-                disabled={isLoading}
-                required
-                className="pl-9 h-10"
+                disabled={isSubmitting}
+                className={cn(
+                  'pl-9 h-10',
+                  errors.email &&
+                    'border-destructive focus-visible:ring-destructive',
+                )}
                 autoComplete="email"
+                {...register('email', {
+                  required: 'El correo electrónico es obligatorio',
+                  pattern: {
+                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                    message: 'Ingresa un correo electrónico válido',
+                  },
+                })}
               />
             </div>
+            {errors.email && (
+              <p className="text-[11px] text-destructive font-medium mt-1">
+                {errors.email.message}
+              </p>
+            )}
           </div>
 
           <div className="space-y-1.5">
@@ -158,15 +182,20 @@ export default function RegisterPage() {
                 id="password"
                 type={showPassword ? 'text' : 'password'}
                 placeholder="Mínimo 6 caracteres"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  setErrorMessage(null);
-                }}
-                disabled={isLoading}
-                required
-                className="pl-9 pr-9 h-10"
+                disabled={isSubmitting}
+                className={cn(
+                  'pl-9 pr-9 h-10',
+                  errors.password &&
+                    'border-destructive focus-visible:ring-destructive',
+                )}
                 autoComplete="new-password"
+                {...register('password', {
+                  required: 'La contraseña es obligatoria',
+                  minLength: {
+                    value: 6,
+                    message: 'La contraseña debe tener al menos 6 caracteres',
+                  },
+                })}
               />
               <button
                 type="button"
@@ -182,6 +211,11 @@ export default function RegisterPage() {
                 )}
               </button>
             </div>
+            {errors.password && (
+              <p className="text-[11px] text-destructive font-medium mt-1">
+                {errors.password.message}
+              </p>
+            )}
           </div>
 
           <div className="space-y-1.5">
@@ -195,33 +229,51 @@ export default function RegisterPage() {
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 id="confirmPassword"
-                type={showPassword ? 'text' : 'password'}
+                type={showConfirmPassword ? 'text' : 'password'}
                 placeholder="Repite la contraseña"
-                value={confirmPassword}
-                onChange={(e) => {
-                  setConfirmPassword(e.target.value);
-                  setErrorMessage(null);
-                }}
-                disabled={isLoading}
-                required
-                className="pl-9 h-10"
+                disabled={isSubmitting}
+                className={cn(
+                  'pl-9 pr-9 h-10',
+                  errors.confirmPassword &&
+                    'border-destructive focus-visible:ring-destructive',
+                )}
                 autoComplete="new-password"
+                {...register('confirmPassword', {
+                  required: 'Confirma tu contraseña',
+                  validate: (value, formValues) =>
+                    value === formValues.password ||
+                    'Las contraseñas no coinciden',
+                })}
               />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                tabIndex={-1}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
+                title={
+                  showConfirmPassword ? 'Ocultar contraseña' : 'Ver contraseña'
+                }
+              >
+                {showConfirmPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
             </div>
+            {errors.confirmPassword && (
+              <p className="text-[11px] text-destructive font-medium mt-1">
+                {errors.confirmPassword.message}
+              </p>
+            )}
           </div>
 
           <Button
             type="submit"
-            disabled={
-              isLoading ||
-              !name.trim() ||
-              !email.trim() ||
-              !password ||
-              !confirmPassword
-            }
+            disabled={isSubmitting}
             className="w-full h-10 bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-md shadow-emerald-600/20 transition-all active:scale-[0.99] disabled:opacity-50"
           >
-            {isLoading ? (
+            {isSubmitting ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 Registrando cuenta...

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useForm } from 'react-hook-form';
 import {
   MessageSquare,
   Lock,
@@ -15,35 +16,40 @@ import { useAuth } from '@/contexts/auth-context';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { cn } from '@/lib/utils';
+
+interface LoginFormValues {
+  email: string;
+  password: string;
+}
 
 export default function LoginPage() {
   const { login } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormValues>({
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+    mode: 'onTouched',
+  });
+
+  const onSubmit = async (data: LoginFormValues) => {
     setErrorMessage(null);
-
-    if (!email.trim() || !password) {
-      setErrorMessage('Por favor, completa todos los campos.');
-      return;
-    }
-
     try {
-      setIsLoading(true);
-      await login(email.trim(), password);
+      await login(data.email.trim(), data.password);
     } catch (err: unknown) {
       setErrorMessage(
         err instanceof Error
           ? err.message
           : 'Credenciales inválidas. Verifica tu correo y contraseña.',
       );
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -79,7 +85,7 @@ export default function LoginPage() {
         )}
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
           <div className="space-y-1.5">
             <label
               className="text-xs font-semibold text-foreground"
@@ -93,17 +99,26 @@ export default function LoginPage() {
                 id="email"
                 type="email"
                 placeholder="ejemplo@acema.com"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  setErrorMessage(null);
-                }}
-                disabled={isLoading}
-                required
-                className="pl-9 h-10"
+                disabled={isSubmitting}
+                className={cn(
+                  'pl-9 h-10',
+                  errors.email && 'border-destructive focus-visible:ring-destructive',
+                )}
                 autoComplete="email"
+                {...register('email', {
+                  required: 'El correo electrónico es obligatorio',
+                  pattern: {
+                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                    message: 'Ingresa un correo electrónico válido',
+                  },
+                })}
               />
             </div>
+            {errors.email && (
+              <p className="text-[11px] text-destructive font-medium mt-1">
+                {errors.email.message}
+              </p>
+            )}
           </div>
 
           <div className="space-y-1.5">
@@ -119,15 +134,15 @@ export default function LoginPage() {
                 id="password"
                 type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  setErrorMessage(null);
-                }}
-                disabled={isLoading}
-                required
-                className="pl-9 pr-9 h-10"
+                disabled={isSubmitting}
+                className={cn(
+                  'pl-9 pr-9 h-10',
+                  errors.password && 'border-destructive focus-visible:ring-destructive',
+                )}
                 autoComplete="current-password"
+                {...register('password', {
+                  required: 'La contraseña es obligatoria',
+                })}
               />
               <button
                 type="button"
@@ -143,14 +158,19 @@ export default function LoginPage() {
                 )}
               </button>
             </div>
+            {errors.password && (
+              <p className="text-[11px] text-destructive font-medium mt-1">
+                {errors.password.message}
+              </p>
+            )}
           </div>
 
           <Button
             type="submit"
-            disabled={isLoading || !email.trim() || !password}
+            disabled={isSubmitting}
             className="w-full h-10 bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-md shadow-emerald-600/20 transition-all active:scale-[0.99] disabled:opacity-50"
           >
-            {isLoading ? (
+            {isSubmitting ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 Iniciando sesión...
