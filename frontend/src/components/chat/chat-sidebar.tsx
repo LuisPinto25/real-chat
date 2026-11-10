@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Search, MessageSquare, Plus } from 'lucide-react';
 import { useChat } from '@/contexts/chat-context';
 import { useAuth } from '@/contexts/auth-context';

@@ -1,15 +1,16 @@
 'use client';
 
-import React, {
+import {
   createContext,
   useContext,
   useEffect,
   useState,
   useCallback,
+  type ReactNode,
 } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { User } from '@/types';
-import { apiRequest } from '@/lib/api';
+import type { User } from '@/types';
+import { loginAction, registerAction, checkAuthAction } from '@/actions/auth';
 
 interface AuthContextType {
   user: User | null;
@@ -22,12 +23,23 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const router = useRouter();
   const pathname = usePathname();
+
+  const saveSession = useCallback(
+    (sessionUser: User, sessionToken: string) => {
+      localStorage.setItem('token', sessionToken);
+      localStorage.setItem('user', JSON.stringify(sessionUser));
+      setToken(sessionToken);
+      setUser(sessionUser);
+      router.replace('/chat');
+    },
+    [router],
+  );
 
   const logout = useCallback(() => {
     localStorage.removeItem('token');
@@ -46,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     setToken(storedToken);
 
-    apiRequest<User>('/auth/me')
+    checkAuthAction()
       .then((userData) => {
         setUser(userData);
         localStorage.setItem('user', JSON.stringify(userData));
@@ -72,35 +84,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, isLoading, pathname, router]);
 
   const login = async (email: string, password: string) => {
-    const data = await apiRequest<{ user: User; token: string }>(
-      '/auth/login',
-      {
-        method: 'POST',
-        body: JSON.stringify({ email, password }),
-      },
-    );
-
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('user', JSON.stringify(data.user));
-    setToken(data.token);
-    setUser(data.user);
-    router.replace('/chat');
+    const data = await loginAction(email, password);
+    saveSession(data.user, data.token);
   };
 
   const register = async (name: string, email: string, password: string) => {
-    const data = await apiRequest<{ user: User; token: string }>(
-      '/auth/register',
-      {
-        method: 'POST',
-        body: JSON.stringify({ name, email, password }),
-      },
-    );
-
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('user', JSON.stringify(data.user));
-    setToken(data.token);
-    setUser(data.user);
-    router.replace('/chat');
+    const data = await registerAction(name, email, password);
+    saveSession(data.user, data.token);
   };
 
   return (
